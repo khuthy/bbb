@@ -58,11 +58,11 @@ durationBtns.forEach(btn => {
 });
 
 // --- Record button ---
-recordBtn.addEventListener('click', async () => {
+recordBtn.addEventListener('click', () => {
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     stopRecording();
   } else {
-    await startRecording();
+    startRecording();
   }
 });
 
