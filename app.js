@@ -67,8 +67,19 @@ recordBtn.addEventListener('click', async () => {
 });
 
 async function startRecording() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setHintError('Audio recording is not supported in this browser. Try Chrome, Firefox, or Safari.');
+    return;
+  }
+
+  recordBtn.disabled = true;
+  recordHint.textContent = 'Waiting for microphone permission… check your browser.';
+  recordHint.style.color = '#a78bfa';
+
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    recordBtn.disabled = false;
+    recordHint.style.color = '';
     setupVisualizer(stream);
 
     audioChunks = [];
@@ -91,10 +102,22 @@ async function startRecording() {
     startTimer();
 
   } catch (err) {
-    showError(err.name === 'NotAllowedError'
-      ? 'Microphone access denied. Please allow microphone access and try again.'
-      : `Could not access microphone: ${err.message}`);
+    recordBtn.disabled = false;
+    recordHint.style.color = '';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      setHintError('Microphone blocked. Click the lock/camera icon in your address bar to allow access, then try again.');
+    } else if (err.name === 'NotFoundError') {
+      setHintError('No microphone found. Please connect a microphone and try again.');
+    } else {
+      setHintError(`Microphone error: ${err.message}`);
+    }
   }
+}
+
+function setHintError(msg) {
+  recordHint.textContent = msg;
+  recordHint.style.color = '#ff4d6d';
+  setTimeout(() => { recordHint.style.color = ''; }, 6000);
 }
 
 function stopRecording() {
@@ -146,6 +169,7 @@ function setRecordingUI(recording) {
   iconMic.classList.toggle('hidden', recording);
   iconStop.classList.toggle('hidden', !recording);
   recordHint.textContent = recording ? 'Recording… tap to stop early' : 'Tap the mic to start recording';
+  recordHint.style.color = '';
   durationBtns.forEach(b => b.classList.toggle('disabled-btn', recording));
 
   if (!recording) {
